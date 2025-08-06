@@ -8,6 +8,7 @@ import helmet from "helmet";
 import hpp from "hpp";
 import { globalErrorHandler } from "@/controllers/error-controller";
 import mongoSanitize from "mongo-sanitize";
+import formRouter from "@/routes/form-routes";
 
 const app = express();
 
@@ -69,7 +70,7 @@ app.use((req, res, next) => {
 });
 
 // rotes
-// app.use("/api/v1/forms", unitsRouter);
+app.use("/api/v1/forms", formRouter);
 
 // Handle unknown routes (404)
 app.use((req: Request, res: Response) => {
