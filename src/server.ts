@@ -15,7 +15,19 @@ process.on("uncaughtException", (err: unknown) => {
 });
 
 import app from "./app";
+import dotenv from "dotenv";
 import mongoose from "mongoose";
+
+dotenv.config({ path: "./config.env" });
+
+mongoose
+  .connect(process.env.REMOTE_DB_CONNECTION_STRING as string, {})
+  .then(() => {
+    console.log("Database connection successful");
+  })
+  .catch((err) => {
+    console.error("Database connection error:", err);
+  });
 
 // ✅ Only listen if the file is run directly (NOT when imported by Vercel)
 if (require.main === module) {
