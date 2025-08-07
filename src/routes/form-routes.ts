@@ -3,6 +3,7 @@ import {
   deleteFormOnId,
   editFormOnId,
   getAllForms,
+  getFormById,
 } from "@/controllers/form-controller";
 import express, { Router } from "express";
 import multer from "multer";
@@ -25,6 +26,7 @@ const upload = multer({
 
 router.post("/", upload.single("resume"), createNewForm);
 router.route("/").get(getAllForms);
+router.route("/:id").get(getFormById);
 router.route("/:id").put(editFormOnId);
 router.route("/:id").delete(deleteFormOnId);
 

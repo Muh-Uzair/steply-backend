@@ -1,7 +1,8 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { FormModel } from "@/models/form-model";
 import bcrypt from "bcrypt";
 
+// FUNCTION
 export const createNewForm = async (req: Request, res: Response) => {
   try {
     // Destructure the fields from req.body
@@ -91,101 +92,135 @@ export const createNewForm = async (req: Request, res: Response) => {
   }
 };
 
+// FUNCTION
+export const getAllForms = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const allForms = await FormModel.find()
+      .select("fullName gender phoneNum country")
+      .lean();
+
+    res.status(200).json({
+      status: "success",
+      data: allForms,
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 interface IResumeFile {
   data: Buffer;
   mimetype: string;
   originalname: string;
 }
 
-export const getAllForms = async (req: Request, res: Response) => {
+// FUNCTION
+export const getFormById = async (req: Request, res: Response) => {
   try {
-    const forms = await FormModel.find().lean();
+    const { id } = req.params;
 
-    const formattedForms = forms.map((form) => {
-      const resumeFile = form.resume as any;
-
-      console.log("Processing form resume:", {
-        hasResume: !!resumeFile,
-        resumeKeys: resumeFile ? Object.keys(resumeFile) : [],
-        resumeType: typeof resumeFile,
-        resumeData: resumeFile,
+    if (!id) {
+      return res.status(400).json({
+        status: "error",
+        message: "Form ID is required in request body",
       });
+    }
 
-      // Handle different possible data structures
-      let processedResume = null;
+    const form = await FormModel.findById(id).lean();
 
-      if (resumeFile && resumeFile.data) {
-        let bufferData;
-        let mimetype =
-          resumeFile.mimetype || resumeFile.contentType || "application/pdf";
-        let originalname =
-          resumeFile.originalname || resumeFile.filename || "resume.pdf";
+    if (!form) {
+      return res.status(404).json({
+        status: "error",
+        message: "Form not found",
+      });
+    }
 
-        // Handle MongoDB Binary data
-        if (resumeFile.data.buffer) {
-          bufferData = Buffer.from(resumeFile.data.buffer);
-        } else if (Buffer.isBuffer(resumeFile.data)) {
-          bufferData = resumeFile.data;
-        } else if (resumeFile.data.toString) {
-          bufferData = Buffer.from(resumeFile.data);
-        }
+    const resumeFile = form.resume as any;
 
-        console.log("Buffer processing:", {
-          hasBuffer: !!bufferData,
-          bufferLength: bufferData?.length,
-          mimetype,
-          originalname,
-        });
-
-        if (bufferData && bufferData.length > 0) {
-          processedResume = {
-            base64: bufferData.toString("base64"),
-            mimetype: mimetype,
-            originalname: originalname,
-            size: bufferData.length,
-          };
-        }
-      }
-
-      return {
-        ...form,
-        resume: processedResume,
-      };
+    console.log("Processing form resume:", {
+      hasResume: !!resumeFile,
+      resumeKeys: resumeFile ? Object.keys(resumeFile) : [],
+      resumeType: typeof resumeFile,
+      resumeData: resumeFile,
     });
 
-    console.log("Sending response with forms:", formattedForms.length);
+    let processedResume = null;
+
+    if (resumeFile && resumeFile.data) {
+      let bufferData;
+      let mimetype =
+        resumeFile.mimetype || resumeFile.contentType || "application/pdf";
+      let originalname =
+        resumeFile.originalname || resumeFile.filename || "resume.pdf";
+
+      if (resumeFile.data.buffer) {
+        bufferData = Buffer.from(resumeFile.data.buffer);
+      } else if (Buffer.isBuffer(resumeFile.data)) {
+        bufferData = resumeFile.data;
+      } else if (resumeFile.data.toString) {
+        bufferData = Buffer.from(resumeFile.data);
+      }
+
+      console.log("Buffer processing:", {
+        hasBuffer: !!bufferData,
+        bufferLength: bufferData?.length,
+        mimetype,
+        originalname,
+      });
+
+      if (bufferData && bufferData.length > 0) {
+        processedResume = {
+          base64: bufferData.toString("base64"),
+          mimetype,
+          originalname,
+          size: bufferData.length,
+        };
+      }
+    }
+
+    const formattedForm = {
+      ...form,
+      resume: processedResume,
+    };
+
+    console.log("Sending response with form");
     console.log(
       "Sample resume data:",
-      formattedForms[0]?.resume
+      formattedForm.resume
         ? {
-            hasBase64: !!formattedForms[0].resume.base64,
-            base64Length: formattedForms[0].resume.base64?.length,
-            mimetype: formattedForms[0].resume.mimetype,
-            originalname: formattedForms[0].resume.originalname,
+            hasBase64: !!formattedForm.resume.base64,
+            base64Length: formattedForm.resume.base64?.length,
+            mimetype: formattedForm.resume.mimetype,
+            originalname: formattedForm.resume.originalname,
           }
         : "No resume"
     );
 
     res.status(200).json({
-      status: "success",
-      message: "Forms fetched successfully",
-      data: formattedForms,
+      message: "Form fetched successfully",
+      data: formattedForm,
     });
   } catch (error) {
-    console.error("Error fetching forms:", error);
+    console.error("Error fetching form by ID:", error);
     res.status(500).json({
       status: "error",
-      message: "Failed to fetch forms",
+      message: "Failed to fetch form",
     });
   }
 };
 
+// FUNCTION
 export const editFormOnId = (req: Request, res: Response) => {
   res.status(200).json({
     message: "forms success",
   });
 };
 
+// FUNCTION
 export const deleteFormOnId = (req: Request, res: Response) => {
   res.status(200).json({
     message: "forms success",
