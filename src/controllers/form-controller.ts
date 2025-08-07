@@ -102,30 +102,69 @@ export const getAllForms = async (req: Request, res: Response) => {
     const forms = await FormModel.find().lean();
 
     const formattedForms = forms.map((form) => {
-      const resumeFile = form.resume as unknown as IResumeFile | null;
+      const resumeFile = form.resume as any;
 
       console.log("Processing form resume:", {
         hasResume: !!resumeFile,
-        originalname: resumeFile?.originalname,
-        mimetype: resumeFile?.mimetype,
-        dataLength: resumeFile?.data?.length,
+        resumeKeys: resumeFile ? Object.keys(resumeFile) : [],
+        resumeType: typeof resumeFile,
+        resumeData: resumeFile,
       });
+
+      // Handle different possible data structures
+      let processedResume = null;
+
+      if (resumeFile && resumeFile.data) {
+        let bufferData;
+        let mimetype =
+          resumeFile.mimetype || resumeFile.contentType || "application/pdf";
+        let originalname =
+          resumeFile.originalname || resumeFile.filename || "resume.pdf";
+
+        // Handle MongoDB Binary data
+        if (resumeFile.data.buffer) {
+          bufferData = Buffer.from(resumeFile.data.buffer);
+        } else if (Buffer.isBuffer(resumeFile.data)) {
+          bufferData = resumeFile.data;
+        } else if (resumeFile.data.toString) {
+          bufferData = Buffer.from(resumeFile.data);
+        }
+
+        console.log("Buffer processing:", {
+          hasBuffer: !!bufferData,
+          bufferLength: bufferData?.length,
+          mimetype,
+          originalname,
+        });
+
+        if (bufferData && bufferData.length > 0) {
+          processedResume = {
+            base64: bufferData.toString("base64"),
+            mimetype: mimetype,
+            originalname: originalname,
+            size: bufferData.length,
+          };
+        }
+      }
 
       return {
         ...form,
-        resume:
-          resumeFile && resumeFile.data
-            ? {
-                base64: resumeFile.data.toString("base64"),
-                mimetype: resumeFile.mimetype || "application/pdf",
-                originalname: resumeFile.originalname || "resume.pdf",
-                size: resumeFile.data.length, // Add file size
-              }
-            : null,
+        resume: processedResume,
       };
     });
 
     console.log("Sending response with forms:", formattedForms.length);
+    console.log(
+      "Sample resume data:",
+      formattedForms[0]?.resume
+        ? {
+            hasBase64: !!formattedForms[0].resume.base64,
+            base64Length: formattedForms[0].resume.base64?.length,
+            mimetype: formattedForms[0].resume.mimetype,
+            originalname: formattedForms[0].resume.originalname,
+          }
+        : "No resume"
+    );
 
     res.status(200).json({
       status: "success",
