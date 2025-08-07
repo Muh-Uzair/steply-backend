@@ -27,7 +27,7 @@ const upload = multer({
 router.post("/", upload.single("resume"), createNewForm);
 router.route("/").get(getAllForms);
 router.route("/:id").get(getFormById);
-router.route("/:id").put(editFormOnId);
+router.put("/:id", upload.single("resume"), editFormOnId);
 router.route("/:id").delete(deleteFormOnId);
 
 export default router;
