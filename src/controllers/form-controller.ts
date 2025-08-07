@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 
 export const createNewForm = (req: Request, res: Response) => {
+  console.log("Body:", req.body); // all text fields
+  console.log("File:", req.file); // resume file object
+  console.log(req.body);
   res.status(200).json({
     message: "forms success",
   });

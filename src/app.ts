@@ -16,7 +16,7 @@ const app = express();
 app.use(helmet());
 
 // body parsing
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json());
 
 // parameter pollution to remove duplicate query params
 app.use(
