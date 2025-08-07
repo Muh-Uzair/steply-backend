@@ -7,8 +7,16 @@ export const createNewForm = (req: Request, res: Response) => {
 };
 
 export const getAllForms = (req: Request, res: Response) => {
+  const allForms = [
+    { id: 1, form: "form1" },
+    { id: 2, form: "form2" },
+    { id: 3, form: "form3" },
+    { id: 4, form: "form4" },
+    { id: 5, form: "form5" },
+  ];
   res.status(200).json({
     message: "forms success",
+    data: allForms,
   });
 };
 
